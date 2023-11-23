@@ -303,6 +303,3 @@ export class RegistryParser {
         return undefined;
     }
 }
-
-let parser = new RegistryParser();
-console.log(parser.getRegistryDate());
