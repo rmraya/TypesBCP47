@@ -1,6 +1,7 @@
 rm -rf node_modules/
+rm package-lock.json
 npm install
 rm -rf dist/
-node_modules/.bin/tsc
+npm run build
 cp ts/*.xml dist/
 cp ts/*.txt dist/

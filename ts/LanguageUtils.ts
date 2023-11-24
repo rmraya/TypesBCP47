@@ -44,7 +44,7 @@ export class LanguageUtils {
         let parser: SAXParser = new SAXParser();
         parser.setContentHandler(handler);
         let filePath: string = path.join(__dirname, 'extendedLanguageList.xml');
-        parser.parse(filePath);
+        parser.parseFile(filePath);
         let doc: XMLDocument = (handler as DOMBuilder).getDocument();
         let root: XMLElement = doc.getRoot();
         let children: Array<XMLElement> = root.getChildren();
@@ -99,7 +99,7 @@ export class LanguageUtils {
         let parser: SAXParser = new SAXParser();
         parser.setContentHandler(handler);
         let filePath: string = path.join(__dirname, 'languageList.xml');
-        parser.parse(filePath);
+        parser.parseFile(filePath);
         let doc: XMLDocument = (handler as DOMBuilder).getDocument();
         let root: XMLElement = doc.getRoot();
         let children: Array<XMLElement> = root.getChildren();
