@@ -17,7 +17,6 @@ Method | Description
 `isBiDi(code: string): boolean` | Returns `true` if the language is written from right to left (Arabic, Hebrew, Persian, Urdu), `false` otherwise.
 `getLanguages(): Array<Language>` |  Returns an array of `Language` objects from the list maintained by [ICU (International Components for Unicode)](https://icu.unicode.org/).
 `getLanguage(code: string): Language` | Returns a `Language` object by its code if the code is valid. Returns `undefined` otherwise.
-`undefined` otherwise.
 `getCommonLanguages(): Array<Language>` | Returns an array of most common `Language` objects.
 
 You can combine these methods to validate language tags:
