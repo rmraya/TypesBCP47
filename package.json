@@ -3,6 +3,15 @@
   "productName": "TypesBCP47",
   "version": "1.2.0",
   "description": "TypeScript library for parsing BCP47 language tags",
+  "keywords": [
+    "typescript",
+    "bcp47",
+    "language",
+    "tag",
+    "locale",
+    "i18n",
+    "l10n"
+  ],
   "scripts": {
     "build": "tsc"
   },
