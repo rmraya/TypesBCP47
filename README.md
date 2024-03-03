@@ -13,7 +13,7 @@ Class `LanguageUtils` provides static methods for parsing and validating languag
 Method | Description
 --- | ---
 `getTagDescription(tag: string): string` | Returns a language description for the tag if the tag is a valid language tag. Returns `undefined` otherwise.
-`normalizeCode(code: string): string` | Returns a normalized code if the code is valid. 
+`normalizeCode(code: string): string` | Returns a normalized code if the code is valid.
 `isCJK(code: string): boolean` | Returns `true` if the language is Chinese, Japanese, Korean, Vietnamese or Aiunu. Returns `false` otherwise.
 `isBiDi(code: string): boolean` | Returns `true` if the language is written from right to left (Arabic, Hebrew, Persian, Urdu), `false` otherwise.
 `getLanguages(): Array<Language>` |  Returns an array of `Language` objects from the list maintained by [ICU (International Components for Unicode)](https://icu.unicode.org/).
