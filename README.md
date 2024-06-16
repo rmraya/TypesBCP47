@@ -16,9 +16,11 @@ Method | Description
 `normalizeCode(code: string): string` | Returns a normalized code if the code is valid.
 `isCJK(code: string): boolean` | Returns `true` if the language is Chinese, Japanese, Korean, Vietnamese or Aiunu. Returns `false` otherwise.
 `isBiDi(code: string): boolean` | Returns `true` if the language is written from right to left (Arabic, Hebrew, Persian, Urdu), `false` otherwise.
-`getLanguages(): Array<Language>` |  Returns an array of `Language` objects from the list maintained by [ICU (International Components for Unicode)](https://icu.unicode.org/).
-`getLanguage(code: string): Language` | Returns a `Language` object by its code if the code is valid. Returns `undefined` otherwise.
-`getCommonLanguages(): Array<Language>` | Returns an array of most common `Language` objects.
+`getLanguages(locale: string): Array<Language>` |  Returns an array of `Language` objects with descriptions in the selected `locale`.
+`getLanguage(code: string, locale: string): Language` | Returns a `Language` object by its code with descriptions in the selected `locale` if the code is valid. Returns `undefined` otherwise.
+`getCommonLanguages(locale: string): Array<Language>` | Returns an array of most common `Language` objects with descriptions in the selected `locale`.
+
+Valid values for `locale` parameter are `en` and `es`.
 
 You can combine these methods to validate language tags:
 

@@ -16,8 +16,7 @@ import { RegistryParser } from "./RegistryParser";
 
 export class LanguageUtils {
 
-    static languages: Array<Language>;
-    static commonLanguages: Array<Language>;
+    // static commonLanguages: Array<Language>;
     static bidiCodes: Set<string>;
     static registryParser: RegistryParser;
 
@@ -30,20 +29,18 @@ export class LanguageUtils {
         if (LanguageUtils.bidiCodes) {
             return LanguageUtils.bidiCodes.has(code);
         }
-        LanguageUtils.getLanguages();
+        LanguageUtils.getLanguages('en');
         return LanguageUtils.bidiCodes.has(code);
     }
 
-    static getLanguages(): Array<Language> {
-        if (LanguageUtils.languages) {
-            return LanguageUtils.languages;
-        }
-        LanguageUtils.languages = new Array<Language>();
+
+    static getLanguages(locale: string): Array<Language> {
+        let languages: Array<Language> = new Array<Language>();
         LanguageUtils.bidiCodes = new Set<string>();
         let handler: ContentHandler = new DOMBuilder();
         let parser: SAXParser = new SAXParser();
         parser.setContentHandler(handler);
-        let filePath: string = path.join(__dirname, 'extendedLanguageList.xml');
+        let filePath: string = path.join(__dirname, 'extendedLanguageList_' + locale + '.xml');
         parser.parseFile(filePath);
         let doc: XMLDocument = (handler as DOMBuilder).getDocument();
         let root: XMLElement = doc.getRoot();
@@ -55,20 +52,18 @@ export class LanguageUtils {
             if (bidi === 'true') {
                 LanguageUtils.bidiCodes.add(code);
             }
-            LanguageUtils.languages.push(new Language(code, description));
+            languages.push(new Language(code, description));
         }
-        return LanguageUtils.languages;
+        return languages;
     }
 
-    static getLanguage(code: string): Language {
+    static getLanguage(code: string, locale: string): Language {
         if (!LanguageUtils.registryParser) {
             LanguageUtils.registryParser = new RegistryParser();
         }
         code = LanguageUtils.registryParser.normalizeCode(code);
-        if (!LanguageUtils.languages) {
-            LanguageUtils.getLanguages();
-        }
-        for (let language of LanguageUtils.languages) {
+        let languages: Array<Language> = LanguageUtils.getLanguages(locale);
+        for (let language of languages) {
             if (language.getCode() === code) {
                 return language;
             }
@@ -87,32 +82,22 @@ export class LanguageUtils {
         return LanguageUtils.registryParser.normalizeCode(code);
     }
 
-    static getCommonLanguages(): Array<Language> {
-        if (LanguageUtils.commonLanguages) {
-            return LanguageUtils.commonLanguages;
-        }
-        LanguageUtils.commonLanguages = [];
-        if (!LanguageUtils.bidiCodes) {
-            LanguageUtils.bidiCodes = new Set<string>();
-        }
+    static getCommonLanguages(locale: string): Array<Language> {
+        let commonLanguages: Array<Language> = [];
         let handler: ContentHandler = new DOMBuilder();
         let parser: SAXParser = new SAXParser();
         parser.setContentHandler(handler);
-        let filePath: string = path.join(__dirname, 'languageList.xml');
+        let filePath: string = path.join(__dirname, 'languageList_' + locale + '.xml');
         parser.parseFile(filePath);
         let doc: XMLDocument = (handler as DOMBuilder).getDocument();
         let root: XMLElement = doc.getRoot();
         let children: Array<XMLElement> = root.getChildren();
         for (let child of children) {
             let code: string = child.getAttribute('code').getValue();
-            let bidi: string = child.getAttribute('bidi').getValue();
             let description: string = child.getText();
-            if (bidi === 'true') {
-                LanguageUtils.bidiCodes.add(code);
-            }
-            LanguageUtils.commonLanguages.push(new Language(code, description));
+            commonLanguages.push(new Language(code, description));
         }
-        return LanguageUtils.commonLanguages;
+        return commonLanguages;
     }
 
     static getTagDescription(tag: string): string {
