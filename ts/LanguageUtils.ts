@@ -16,7 +16,6 @@ import { RegistryParser } from "./RegistryParser";
 
 export class LanguageUtils {
 
-    // static commonLanguages: Array<Language>;
     static bidiCodes: Set<string>;
     static registryParser: RegistryParser;
 
@@ -54,6 +53,9 @@ export class LanguageUtils {
             }
             languages.push(new Language(code, description));
         }
+        languages.sort((a: Language, b: Language) => {
+            return a.getDescription().localeCompare(b.getDescription(), locale);
+        });
         return languages;
     }
 
@@ -97,6 +99,9 @@ export class LanguageUtils {
             let description: string = child.getText();
             commonLanguages.push(new Language(code, description));
         }
+        commonLanguages.sort((a: Language, b: Language) => {
+            return a.getDescription().localeCompare(b.getDescription(), locale);
+        });
         return commonLanguages;
     }
 
