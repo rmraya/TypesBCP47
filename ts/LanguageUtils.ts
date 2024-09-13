@@ -10,8 +10,8 @@
  *     Maxprograms - initial API and implementation
  *******************************************************************************/
 import path = require("path");
-import { Language } from "./Language";
 import { ContentHandler, DOMBuilder, SAXParser, XMLDocument, XMLElement } from "typesxml";
+import { Language } from "./Language";
 import { RegistryParser } from "./RegistryParser";
 
 export class LanguageUtils {
