@@ -1,6 +1,6 @@
 # TypesBCP47
 
-TypeScript library for language tags from BCP47
+TypeScript library for language tags from [BCP47](https://www.ietf.org/rfc/bcp/bcp47.html)
 
 ## Installation
 
