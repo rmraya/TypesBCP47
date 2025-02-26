@@ -1,7 +1,7 @@
 {
   "name": "typesbcp47",
   "productName": "TypesBCP47",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "TypeScript library for parsing BCP47 language tags",
   "keywords": [
     "typescript",
@@ -32,7 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.3"
   },
   "dependencies": {
     "typesxml": "^1.6.3"
