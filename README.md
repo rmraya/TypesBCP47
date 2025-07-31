@@ -20,7 +20,7 @@ Method | Description
 `getLanguage(code: string, locale: string): Language` | Returns a `Language` object by its code with descriptions in the selected `locale` if the code is valid. Returns `undefined` otherwise.
 `getCommonLanguages(locale: string): Array<Language>` | Returns an array of most common `Language` objects with descriptions in the selected `locale`.
 
-Valid values for `locale` parameter are `en` and `es`.
+Valid values for `locale` parameter are `en`, `es` and `fr`.
 
 You can combine these methods to validate language tags:
 
