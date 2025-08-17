@@ -15,9 +15,9 @@ export class Variant {
     description: string;
     prefix: string;
 
-    constructor(name: string, value: string, prefix: string) {
-        this.code = name;
-        this.description = value;
+    constructor(code: string, description: string, prefix: string) {
+        this.code = code;
+        this.description = description;
         this.prefix = prefix;
     }
 

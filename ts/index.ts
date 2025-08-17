@@ -13,7 +13,7 @@
 export { Language } from './Language';
 export { LanguageUtils } from './LanguageUtils';
 export { Region } from './Region';
-export { RegistryEntry } from './RegistryEntry'
-export { RegistryParser } from './RegistryParser'
+export { RegistryEntry } from './RegistryEntry';
+export { RegistryParser } from './RegistryParser';
 export { Script } from './Script';
 export { Variant } from './Variant';

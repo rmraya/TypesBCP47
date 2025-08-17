@@ -62,16 +62,19 @@ export class RegistryParser {
         }
 
         for (let entry of this.entries) {
-            let type: string = entry.getType();
+            let type: string | undefined = entry.getType();
             if (!type) {
                 continue;
             }
             if (type === 'language') {
-                let description: string = entry.getDescription();
+                let description: string | undefined = entry.getDescription();
+                if (!description) {
+                    throw new Error('Invalid language entry: missing description');
+                }
                 if (description.indexOf('Private use') != -1) {
                     continue;
                 }
-                let subtag: string = entry.getSubtag();
+                let subtag: string | undefined = entry.getSubtag();
                 if (subtag) {
                     if (description.indexOf('|') != -1) {
                         // trim and use only the first name
@@ -83,7 +86,7 @@ export class RegistryParser {
                     }
                     description = description.replace(/'\\(.*\\)'/, '').trim();
                     let lang: Language = new Language(subtag, description);
-                    let suppressedScript: string = entry.get('Suppress-Script');
+                    let suppressedScript: string | undefined = entry.get('Suppress-Script');
                     if (suppressedScript) {
                         lang.setSuppressedScript(suppressedScript);
                     }
@@ -91,44 +94,50 @@ export class RegistryParser {
                 }
             }
             if (type === 'region') {
-                let description: string = entry.getDescription();
+                let description: string | undefined = entry.getDescription();
+                if (!description) {
+                    throw new Error('Invalid region entry: missing description');
+                }
                 if (description.indexOf('Private use') != -1) {
                     continue;
                 }
-                let subtag: string = entry.getSubtag();
+                let subtag: string | undefined = entry.getSubtag();
                 if (subtag) {
                     this.regions.set(subtag, new Region(subtag, description.trim()));
                 }
             }
             if (type === 'script') {
-                let description: string = entry.getDescription();
-                if (description.indexOf('Private use') != -1) {
-                    continue;
+                let description: string | undefined = entry.getDescription();
+                if (!description) {
+                    throw new Error('Invalid script entry: missing description');
                 }
                 description = XMLUtils.replaceAll(description, '(', '[');
                 description = XMLUtils.replaceAll(description, ')', ']');
-                let subtag: string = entry.getSubtag();
+                let subtag: string | undefined = entry.getSubtag();
                 if (subtag) {
                     this.scripts.set(subtag, new Script(subtag, description.trim()));
                 }
             }
             if (type === 'variant') {
-                let description: string = entry.getDescription();
-                if (description.indexOf('Private use') != -1) {
-                    continue;
+                let description: string | undefined = entry.getDescription();
+                if (!description) {
+                    throw new Error('Invalid variant entry: missing description');
                 }
                 description = XMLUtils.replaceAll(description, '(', '[');
                 description = XMLUtils.replaceAll(description, ')', ']');
-                let subtag: string = entry.getSubtag();
-                let prefix: string = entry.get('Prefix');
+                let subtag: string | undefined = entry.getSubtag();
+                let prefix: string | undefined = entry.get('Prefix');
                 if (subtag) {
-                    this.variants.set(subtag, new Variant(subtag, description.trim(), prefix));
+                    // Not all variants have a "Prefix" field, but most do.
+                    // According to the BCP 47 registry, a variant SHOULD have at least one prefix, but there are rare cases (like "fonipa") with none.
+                    // If prefix is undefined, pass an empty string.
+                    this.variants.set(subtag, new Variant(subtag, description.trim(), prefix ?? ''));
                 }
             }
         }
     }
 
-    getRegistryDate(): string {
+    getRegistryDate(): string | undefined {
         for (let entry of this.entries) {
             let date = entry.get('File-Date');
             if (date) {
@@ -138,79 +147,77 @@ export class RegistryParser {
         return undefined;
     }
 
-    getTagDescription(tag: string): string {
+    getTagDescription(tag: string): string | undefined {
         let parts: string[] = tag.split('-');
         if (parts.length === 1) {
             // language part only
-            if (this.languages.has(tag.toLowerCase())) {
-                return this.languages.get(tag.toLowerCase()).getDescription();
+            let lang = this.languages.get(tag.toLowerCase());
+            if (lang) {
+                return lang.getDescription();
             }
         } else if (parts.length === 2) {
             // contains either script or region
-            if (!this.languages.has(parts[0].toLowerCase())) {
+            let lang: Language | undefined = this.languages.get(parts[0].toLowerCase());
+            if (!lang) {
                 return undefined;
             }
-            let lang: Language = this.languages.get(parts[0].toLowerCase());
-            if (parts[1].length === 2 && this.regions.has(parts[1].toUpperCase())) {
+            let reg: Region | undefined = this.regions.get(parts[1].toUpperCase());
+            if (parts[1].length === 2 && reg) {
                 // could be a country code
-                return lang.getDescription() + ' (' + this.regions.get(parts[1].toUpperCase()).getDescription() + ')';
+                return lang.getDescription() + ' (' + reg.getDescription() + ')';
             }
-            if (parts[1].length === 3 && this.regions.has(parts[1])) {
+            reg = this.regions.get(parts[1]);
+            if (parts[1].length === 3 && reg) {
                 // could be a UN region code
-                let reg: Region = this.regions.get(parts[1]);
                 return lang.getDescription() + ' (' + reg.getDescription() + ')';
             }
             if (parts[1].length === 4) {
                 // could have script
-                let script: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
-                if (script === lang.getSuppresedScript()) {
+                let scriptCode: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
+                if (scriptCode === lang.getSuppressedScript()) {
                     return undefined;
                 }
-                if (this.scripts.has(script)) {
-                    return lang.getDescription() + ' (' + this.scripts.get(script).getDescription() + ')';
+                let script: Script | undefined = this.scripts.get(scriptCode);
+                if (script) {
+                    return lang.getDescription() + ' (' + script.getDescription() + ')';
                 }
             }
             // try with a variant
-            if (this.variants.has(parts[1].toLowerCase())) {
-                let variant: Variant = this.variants.get(parts[1].toLowerCase());
-                if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
-                    // variant is valid for the language code
-                    return lang.getDescription() + ' (' + variant.getDescription() + ')';
-                }
+            let variant: Variant | undefined = this.variants.get(parts[1].toLowerCase());
+            if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
+                // variant is valid for the language code
+                return lang.getDescription() + ' (' + variant.getDescription() + ')';
             }
         } else if (parts.length === 3) {
-            if (!this.languages.has(parts[0].toLowerCase())) {
+            let lang: Language | undefined = this.languages.get(parts[0].toLowerCase());
+            if (!lang) {
                 return undefined;
             }
-            let lang: Language = this.languages.get(parts[0].toLowerCase());
             if (parts[1].length === 4) {
                 // could be script + region or variant
                 let script: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
-                if (script === lang.getSuppresedScript()) {
+                if (script === lang.getSuppressedScript()) {
                     return undefined;
                 }
-                if (this.scripts.has(script)) {
-                    let scr: Script = this.scripts.get(script);
+                let scr: Script | undefined = this.scripts.get(script);
+                if (scr) {
                     // check if next part is a region or variant
-                    if (this.regions.has(parts[2].toUpperCase())) {
-                        // check if next part is a variant
-                        let reg: Region = this.regions.get(parts[2].toUpperCase());
+                    let reg: Region | undefined = this.regions.get(parts[2].toUpperCase());
+                    if (reg) {
                         return lang.getDescription() + ' (' + scr.getDescription() + ', ' + reg.getDescription() + ')';
                     }
-                    if (this.variants.has(parts[2].toLowerCase())) {
-                        let variant: Variant = this.variants.get(parts[2].toLowerCase());
-                        if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
-                            // variant is valid for the language code
-                            return lang.getDescription() + ' (' + scr.getDescription() + ', ' + variant.getDescription()
-                                + ')';
-                        }
+                    // check if next part is a variant
+                    let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
+                    if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
+                        // variant is valid for the language code
+                        return lang.getDescription() + ' (' + scr.getDescription() + ', ' + variant.getDescription() + ')';
                     }
                 }
             } else if ((parts[1].length === 2 || parts[1].length === 3) && this.regions.has(parts[1].toUpperCase())) {
                 // could be a region code, check if next part is a variant
-                let reg: Region = this.regions.get(parts[1].toUpperCase());
-                if (this.variants.has(parts[2].toLowerCase())) {
-                    let variant: Variant = this.variants.get(parts[2].toLowerCase());
+                let reg: Region | undefined = this.regions.get(parts[1].toUpperCase());
+                if (reg && this.variants.has(parts[2].toLowerCase())) {
+                    let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
                     if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
                         // variant is valid for the language code
                         return lang.getDescription() + ' (' + reg.getDescription() + ' - '
@@ -222,7 +229,7 @@ export class RegistryParser {
         return undefined;
     }
 
-    normalizeCode(code: string): string {
+    normalizeCode(code: string): string | undefined {
         let parts: string[] = code.split('-');
         if (parts.length == 1) {
             // language part only
@@ -234,7 +241,6 @@ export class RegistryParser {
             if (!this.languages.has(parts[0].toLowerCase())) {
                 return undefined;
             }
-            let lang: Language = this.languages.get(parts[0].toLowerCase());
             if (parts[1].length === 2 && this.regions.has(parts[1].toUpperCase())) {
                 // could be a country code
                 return parts[0].toLowerCase() + '-' + parts[1].toUpperCase();
@@ -245,54 +251,55 @@ export class RegistryParser {
             }
             if (parts[1].length === 4) {
                 // could have script
-                let script: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
-                if (script === lang.getSuppresedScript()) {
-                    return undefined;
-                }
-                if (this.scripts.has(script)) {
-                    return parts[0].toLowerCase() + '-' + script;
+                let lang: Language | undefined = this.languages.get(parts[0].toLowerCase());
+                if (lang) {
+                    let scriptCode: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
+                    if (scriptCode === lang.getSuppressedScript()) {
+                        return undefined;
+                    }
+                    if (this.scripts.has(scriptCode)) {
+                        return parts[0].toLowerCase() + '-' + scriptCode;
+                    }
                 }
             }
             // try with a variant
             if (this.variants.has(parts[1].toLowerCase())) {
-                let variant: Variant = this.variants.get(parts[1].toLowerCase());
+                let variant: Variant | undefined = this.variants.get(parts[1].toLowerCase());
                 if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
                     // variant is valid for the language code
                     return parts[0].toLowerCase() + '-' + variant.getCode();
                 }
             }
         } else if (parts.length == 3) {
-            if (!this.languages.has(parts[0].toLowerCase())) {
+            let lang: Language | undefined = this.languages.get(parts[0].toLowerCase());
+            if (!lang) {
                 return undefined;
             }
-            let lang: Language = this.languages.get(parts[0].toLowerCase());
             if (parts[1].length === 4) {
                 // could be script + region or variant
                 let script: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
-                if (script === lang.getSuppresedScript()) {
+                if (script === lang.getSuppressedScript()) {
                     return undefined;
                 }
-                if (this.scripts.has(script)) {
-                    let scr: Script = this.scripts.get(script);
+                let scr: Script | undefined = this.scripts.get(script);
+                if (scr) {
                     // check if next part is a region or variant
-                    if (this.regions.has(parts[2].toUpperCase())) {
-                        // check if next part is a variant
-                        let reg: Region = this.regions.get(parts[2].toUpperCase());
+                    let reg: Region | undefined = this.regions.get(parts[2].toUpperCase());
+                    if (reg) {
                         return lang.getCode() + '-' + scr.getCode() + '-' + reg.getCode();
                     }
-                    if (this.variants.has(parts[2].toLowerCase())) {
-                        let variant: Variant = this.variants.get(parts[2].toLowerCase());
-                        if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
-                            // variant is valid for the language code
-                            return lang.getCode() + '-' + scr.getCode() + '-' + variant.getCode();
-                        }
+                    // check if next part is a variant
+                    let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
+                    if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
+                        // variant is valid for the language code
+                        return lang.getCode() + '-' + scr.getCode() + '-' + variant.getCode();
                     }
                 }
             } else if ((parts[1].length === 2 || parts[1].length === 3) && this.regions.has(parts[1].toUpperCase())) {
                 // could be a region code, check if next part is a variant
-                let reg: Region = this.regions.get(parts[1].toUpperCase());
-                if (this.variants.has(parts[2].toLowerCase())) {
-                    let variant: Variant = this.variants.get(parts[2].toLowerCase());
+                let reg: Region | undefined = this.regions.get(parts[1].toUpperCase());
+                if (reg) {
+                    let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
                     if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
                         // variant is valid for the language code
                         return lang.getCode() + '-' + reg.getCode() + '-' + variant.getCode();

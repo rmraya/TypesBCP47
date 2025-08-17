@@ -32,7 +32,7 @@ export class Language {
         return this.description;
     }
 
-    getSuppresedScript(): string {   
+    getSuppressedScript(): string {   
         return this.suppressedScript;
     }
 

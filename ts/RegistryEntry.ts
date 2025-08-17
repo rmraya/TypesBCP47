@@ -22,38 +22,29 @@ export class RegistryEntry {
             if (!this.entryMap.has(type)) {
                 this.entryMap.set(type, value);
             } else {
-                let oldValue: string = this.entryMap.get(type);
+                let oldValue: string = this.entryMap.get(type) as string;
                 this.entryMap.set(type, oldValue + ' | ' + value);
             }
         }
     }
 
     getTypes(): Set<string> {
-        let result: Set<string> = new Set<string>();
-        let iterator: IterableIterator<string> = this.entryMap.keys();
-        while(true) {
-            let next: IteratorResult<string> = iterator.next();
-            if (next.done) {
-                break;
-            }
-            result.add(next.value);
-        }
-        return result
+        return new Set(this.entryMap.keys());
     }
 
-    get(type: string): string {
+    get(type: string): string | undefined {
         return this.entryMap.get(type);
     }
 
-    getType(): string {
+    getType(): string | undefined {
         return this.entryMap.get('Type');
     }
 
-    getDescription(): string {
+    getDescription(): string | undefined {
         return this.entryMap.get('Description');
     }
 
-    getSubtag(): string {
+    getSubtag(): string | undefined {
         return this.entryMap.get('Subtag');
     }
 }
