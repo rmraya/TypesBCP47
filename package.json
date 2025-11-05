@@ -1,7 +1,7 @@
 {
   "name": "typesbcp47",
   "productName": "TypesBCP47",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "TypeScript library for parsing BCP47 language tags",
   "keywords": [
     "typescript",
@@ -13,7 +13,7 @@
     "l10n"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc && node dist/copy-assets.js"
   },
   "author": {
     "name": "Rodolfo M. Raya",
