@@ -35,6 +35,6 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "typesxml": "^1.12.0"
+    "typesxml": "^1.14.0"
   }
 }
