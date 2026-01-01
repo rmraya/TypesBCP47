@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright ((c) 2023 - 2025 Maxprograms.
+ * Copyright (c) 2023-2026 Maxprograms.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse   License 1.0
@@ -10,10 +10,10 @@
  *     Maxprograms - initial API and implementation
  *******************************************************************************/
 
-export { Language } from './Language';
-export { LanguageUtils } from './LanguageUtils';
-export { Region } from './Region';
-export { RegistryEntry } from './RegistryEntry';
-export { RegistryParser } from './RegistryParser';
-export { Script } from './Script';
-export { Variant } from './Variant';
+export { Language } from './Language.js';
+export { LanguageUtils } from './LanguageUtils.js';
+export { Region } from './Region.js';
+export { RegistryEntry } from './RegistryEntry.js';
+export { RegistryParser } from './RegistryParser.js';
+export { Script } from './Script.js';
+export { Variant } from './Variant.js';

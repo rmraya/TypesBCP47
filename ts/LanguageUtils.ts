@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright ((c) 2023 - 2025 Maxprograms.
+ * Copyright (c) 2023-2026 Maxprograms.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 1.0
@@ -9,11 +9,11 @@
  * Contributors:
  *     Maxprograms - initial API and implementation
  *******************************************************************************/
-import path = require("path");
-import { existsSync } from "fs";
+import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { ContentHandler, DOMBuilder, SAXParser, XMLAttribute, XMLDocument, XMLElement } from "typesxml";
-import { Language } from "./Language";
-import { RegistryParser } from "./RegistryParser";
+import { Language } from "./Language.js";
+import { RegistryParser } from "./RegistryParser.js";
 
 export class LanguageUtils {
 
@@ -49,7 +49,7 @@ export class LanguageUtils {
         let handler: ContentHandler = new DOMBuilder();
         let parser: SAXParser = new SAXParser();
         parser.setContentHandler(handler);
-        let filePath: string = path.join(__dirname, 'extendedLanguageList_' + locale + '.xml');
+        let filePath: string = join(__dirname, 'extendedLanguageList_' + locale + '.xml');
         if (!existsSync(filePath)) {
             throw new Error('Extended language list does not exist for ' + locale);
         }
@@ -120,7 +120,7 @@ export class LanguageUtils {
         let handler: ContentHandler = new DOMBuilder();
         let parser: SAXParser = new SAXParser();
         parser.setContentHandler(handler);
-        let filePath: string = path.join(__dirname, 'languageList_' + locale + '.xml');
+        let filePath: string = join(__dirname, 'languageList_' + locale + '.xml');
         if (!existsSync(filePath)) {
             throw new Error('Language list does not exist for ' + locale);
         }

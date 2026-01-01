@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright ((c) 2023 - 2025 Maxprograms.
+ * Copyright (c) 2023-2026 Maxprograms.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 1.0
@@ -9,14 +9,15 @@
  * Contributors:
  *     Maxprograms - initial API and implementation
  *******************************************************************************/
-import { Stats, openSync, readSync, statSync } from "fs";
+
+import { Stats, openSync, readSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { XMLUtils } from "typesxml";
-import { Language } from "./Language";
-import { Region } from "./Region";
-import { RegistryEntry } from "./RegistryEntry";
-import { Script } from "./Script";
-import { Variant } from "./Variant";
-import path = require("path");
+import { Language } from "./Language.js";
+import { Region } from "./Region.js";
+import { RegistryEntry } from "./RegistryEntry.js";
+import { Script } from "./Script.js";
+import { Variant } from "./Variant.js";
 
 export class RegistryParser {
 
@@ -33,7 +34,7 @@ export class RegistryParser {
         this.scripts = new Map<string, Script>();
         this.variants = new Map<string, Variant>();
 
-        let filePath: string = path.join(__dirname, 'language-subtag-registry.txt');
+        let filePath: string = join(__dirname, 'language-subtag-registry.txt');
         let stats: Stats = statSync(filePath, { bigint: false, throwIfNoEntry: true });
         let blockSize: number = stats.blksize;
         let fileHandle: number = openSync(filePath, 'r');
