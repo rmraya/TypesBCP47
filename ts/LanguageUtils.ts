@@ -11,15 +11,31 @@
  *******************************************************************************/
 import { join } from "node:path";
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { ContentHandler, DOMBuilder, SAXParser, XMLAttribute, XMLDocument, XMLElement } from "typesxml";
 import { Language } from "./Language.js";
 import { RegistryParser } from "./RegistryParser.js";
+
+const baseDir: string = typeof __dirname !== 'undefined'
+    ? __dirname
+    : fileURLToPath(new URL('.', (0, eval)('import.meta.url') as string));
+const resourceDirs: Array<string> = [baseDir, join(baseDir, '..')];
 
 export class LanguageUtils {
 
     static bidiCodes: Set<string> | undefined;
     static languagesCache: Map<string, Array<Language>> = new Map();
     static registryParser: RegistryParser;
+
+    private static resolveResource(relativePath: string): string | undefined {
+        for (const dir of resourceDirs) {
+            const candidate = join(dir, relativePath);
+            if (existsSync(candidate)) {
+                return candidate;
+            }
+        }
+        return undefined;
+    }
 
     static isCJK(code: string): boolean {
         return code.startsWith("zh") || code.startsWith("ja") || code.startsWith("ko") || code.startsWith("vi")
@@ -49,8 +65,8 @@ export class LanguageUtils {
         let handler: ContentHandler = new DOMBuilder();
         let parser: SAXParser = new SAXParser();
         parser.setContentHandler(handler);
-        let filePath: string = join(__dirname, 'extendedLanguageList_' + locale + '.xml');
-        if (!existsSync(filePath)) {
+        let filePath: string | undefined = LanguageUtils.resolveResource('extendedLanguageList_' + locale + '.xml');
+        if (!filePath) {
             throw new Error('Extended language list does not exist for ' + locale);
         }
         parser.parseFile(filePath);
@@ -120,8 +136,8 @@ export class LanguageUtils {
         let handler: ContentHandler = new DOMBuilder();
         let parser: SAXParser = new SAXParser();
         parser.setContentHandler(handler);
-        let filePath: string = join(__dirname, 'languageList_' + locale + '.xml');
-        if (!existsSync(filePath)) {
+        let filePath: string | undefined = LanguageUtils.resolveResource('languageList_' + locale + '.xml');
+        if (!filePath) {
             throw new Error('Language list does not exist for ' + locale);
         }
         parser.parseFile(filePath);

@@ -10,14 +10,20 @@
  *     Maxprograms - initial API and implementation
  *******************************************************************************/
 
-import { Stats, openSync, readSync, statSync } from "node:fs";
+import { Stats, openSync, readSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { XMLUtils } from "typesxml";
 import { Language } from "./Language.js";
 import { Region } from "./Region.js";
 import { RegistryEntry } from "./RegistryEntry.js";
 import { Script } from "./Script.js";
 import { Variant } from "./Variant.js";
+
+const moduleDir: string = typeof __dirname !== 'undefined'
+    ? __dirname
+    : fileURLToPath(new URL('.', (0, eval)('import.meta.url') as string));
+const registryDirs: Array<string> = [moduleDir, join(moduleDir, '..')];
 
 export class RegistryParser {
 
@@ -34,7 +40,7 @@ export class RegistryParser {
         this.scripts = new Map<string, Script>();
         this.variants = new Map<string, Variant>();
 
-        let filePath: string = join(__dirname, 'language-subtag-registry.txt');
+        let filePath: string = RegistryParser.resolveRegistryPath();
         let stats: Stats = statSync(filePath, { bigint: false, throwIfNoEntry: true });
         let blockSize: number = stats.blksize;
         let fileHandle: number = openSync(filePath, 'r');
@@ -136,6 +142,16 @@ export class RegistryParser {
                 }
             }
         }
+    }
+
+    private static resolveRegistryPath(): string {
+        for (const dir of registryDirs) {
+            const candidate = join(dir, 'language-subtag-registry.txt');
+            if (existsSync(candidate)) {
+                return candidate;
+            }
+        }
+        throw new Error('language-subtag-registry.txt not found');
     }
 
     getRegistryDate(): string | undefined {
