@@ -20,9 +20,7 @@ import { RegistryEntry } from "./RegistryEntry.js";
 import { Script } from "./Script.js";
 import { Variant } from "./Variant.js";
 
-const moduleDir: string = typeof __dirname !== 'undefined'
-    ? __dirname
-    : fileURLToPath(new URL('.', (0, eval)('import.meta.url') as string));
+const moduleDir: string = fileURLToPath(new URL('.', import.meta.url));
 const registryDirs: Array<string> = [moduleDir, join(moduleDir, '..')];
 
 export class RegistryParser {

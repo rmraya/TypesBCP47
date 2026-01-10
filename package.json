@@ -1,8 +1,9 @@
 {
   "name": "typesbcp47",
   "productName": "TypesBCP47",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "description": "TypeScript library for parsing BCP47 language tags",
+  "type": "module",
   "keywords": [
     "typescript",
     "bcp47",
@@ -12,31 +13,28 @@
     "i18n",
     "l10n"
   ],
-    "scripts": {
-    "build": "npm run build:cjs && npm run build:esm",
-    "build:cjs": "tsc --project tsconfig.cjs.json",
-    "build:esm": "tsc --project tsconfig.esm.json && node scripts/create-esm-package.cjs"
-  },"author": {
+  "scripts": {
+    "build": "tsc && node dist/copy-assets.js"
+  },
+  "author": {
     "name": "Rodolfo M. Raya",
     "url": "https://maxprograms.com",
     "email": "rmraya@maxprograms.com"
   },
   "license": "EPL-1.0",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/esm/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "default": "./dist/esm/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
-    "./package.json": "./package.json",
-    "./cjs/*": "./dist/cjs/*"
+    "./package.json": "./package.json"
   },
   "files": [
-    "/dist"
+    "dist"
   ],
   "repository": {
     "type": "git",

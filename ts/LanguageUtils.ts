@@ -16,9 +16,7 @@ import { ContentHandler, DOMBuilder, SAXParser, XMLAttribute, XMLDocument, XMLEl
 import { Language } from "./Language.js";
 import { RegistryParser } from "./RegistryParser.js";
 
-const baseDir: string = typeof __dirname !== 'undefined'
-    ? __dirname
-    : fileURLToPath(new URL('.', (0, eval)('import.meta.url') as string));
+const baseDir: string = fileURLToPath(new URL('.', import.meta.url));
 const resourceDirs: Array<string> = [baseDir, join(baseDir, '..')];
 
 export class LanguageUtils {
