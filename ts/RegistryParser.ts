@@ -31,12 +31,20 @@ export class RegistryParser {
     scripts: Map<string, Script>;
     variants: Map<string, Variant>;
 
+    // Private-use ranges
+    privateLanguageStart: string | undefined;
+    privateLanguageEnd: string | undefined;
+    privateScriptStart: string | undefined;
+    privateScriptEnd: string | undefined;
+    privateRegionRanges: string[][];
+
     constructor() {
         this.entries = new Array<RegistryEntry>();
         this.languages = new Map<string, Language>();
         this.regions = new Map<string, Region>();
         this.scripts = new Map<string, Script>();
         this.variants = new Map<string, Variant>();
+        this.privateRegionRanges = [];
 
         let filePath: string = RegistryParser.resolveRegistryPath();
         let stats: Stats = statSync(filePath, { bigint: false, throwIfNoEntry: true });
@@ -66,6 +74,7 @@ export class RegistryParser {
             }
         }
 
+        let regionRangesList: string[][] = [];
         for (let entry of this.entries) {
             let type: string | undefined = entry.getType();
             if (!type) {
@@ -76,10 +85,16 @@ export class RegistryParser {
                 if (!description) {
                     throw new Error('Invalid language entry: missing description');
                 }
-                if (description.indexOf('Private use') != -1) {
+                let subtag: string | undefined = entry.getSubtag();
+                if (subtag && subtag.indexOf('..') !== -1) {
+                    // Private-use range like "qaa..qtz"
+                    let range: string[] = subtag.split('..');
+                    if (range.length === 2) {
+                        this.privateLanguageStart = range[0].toLowerCase();
+                        this.privateLanguageEnd = range[1].toLowerCase();
+                    }
                     continue;
                 }
-                let subtag: string | undefined = entry.getSubtag();
                 if (subtag) {
                     if (description.indexOf('|') != -1) {
                         // trim and use only the first name
@@ -103,10 +118,15 @@ export class RegistryParser {
                 if (!description) {
                     throw new Error('Invalid region entry: missing description');
                 }
-                if (description.indexOf('Private use') != -1) {
+                let subtag: string | undefined = entry.getSubtag();
+                if (subtag && subtag.indexOf('..') !== -1) {
+                    // Private-use range like "QM..QZ" or "XA..XZ"
+                    let range: string[] = subtag.split('..');
+                    if (range.length === 2) {
+                        regionRangesList.push([range[0].toUpperCase(), range[1].toUpperCase()]);
+                    }
                     continue;
                 }
-                let subtag: string | undefined = entry.getSubtag();
                 if (subtag) {
                     this.regions.set(subtag, new Region(subtag, description.trim()));
                 }
@@ -119,6 +139,15 @@ export class RegistryParser {
                 description = XMLUtils.replaceAll(description, '(', '[');
                 description = XMLUtils.replaceAll(description, ')', ']');
                 let subtag: string | undefined = entry.getSubtag();
+                if (subtag && subtag.indexOf('..') !== -1) {
+                    // Private-use range like "Qaaa..Qabx"
+                    let range: string[] = subtag.split('..');
+                    if (range.length === 2) {
+                        this.privateScriptStart = range[0].substring(0, 1).toUpperCase() + range[0].substring(1).toLowerCase();
+                        this.privateScriptEnd = range[1].substring(0, 1).toUpperCase() + range[1].substring(1).toLowerCase();
+                    }
+                    continue;
+                }
                 if (subtag) {
                     this.scripts.set(subtag, new Script(subtag, description.trim()));
                 }
@@ -140,6 +169,7 @@ export class RegistryParser {
                 }
             }
         }
+        this.privateRegionRanges = regionRangesList;
     }
 
     private static resolveRegistryPath(): string {
@@ -150,6 +180,32 @@ export class RegistryParser {
             }
         }
         throw new Error('language-subtag-registry.txt not found');
+    }
+
+    private isPrivateLanguage(code: string): boolean {
+        if (!this.privateLanguageStart || !this.privateLanguageEnd) {
+            return false;
+        }
+        let lowerCode: string = code.toLowerCase();
+        return lowerCode >= this.privateLanguageStart && lowerCode <= this.privateLanguageEnd;
+    }
+
+    private isPrivateScript(code: string): boolean {
+        if (!this.privateScriptStart || !this.privateScriptEnd) {
+            return false;
+        }
+        let normalizedCode: string = code.substring(0, 1).toUpperCase() + code.substring(1).toLowerCase();
+        return normalizedCode >= this.privateScriptStart && normalizedCode <= this.privateScriptEnd;
+    }
+
+    private isPrivateRegion(code: string): boolean {
+        let upperCode: string = code.toUpperCase();
+        for (let range of this.privateRegionRanges) {
+            if (upperCode >= range[0] && upperCode <= range[1]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     getRegistryDate(): string | undefined {
@@ -166,77 +222,104 @@ export class RegistryParser {
         let parts: string[] = tag.split('-');
         if (parts.length === 1) {
             // language part only
-            let lang = this.languages.get(tag.toLowerCase());
+            let lang: Language | undefined = this.languages.get(tag.toLowerCase());
             if (lang) {
                 return lang.getDescription();
             }
+            if (this.isPrivateLanguage(tag)) {
+                return 'Private Use';
+            }
         } else if (parts.length === 2) {
             // contains either script or region
-            let lang: Language | undefined = this.languages.get(parts[0].toLowerCase());
-            if (!lang) {
+            let isPrivateLang: boolean = this.isPrivateLanguage(parts[0]);
+            if (!this.languages.has(parts[0].toLowerCase()) && !isPrivateLang) {
                 return undefined;
             }
-            let reg: Region | undefined = this.regions.get(parts[1].toUpperCase());
-            if (parts[1].length === 2 && reg) {
+            let langDesc: string = isPrivateLang ? 'Private Use' : this.languages.get(parts[0].toLowerCase())!.getDescription();
+            let lang: Language | undefined = isPrivateLang ? undefined : this.languages.get(parts[0].toLowerCase());
+            if (parts[1].length === 2 && (this.regions.has(parts[1].toUpperCase()) || this.isPrivateRegion(parts[1]))) {
                 // could be a country code
-                return lang.getDescription() + ' (' + reg.getDescription() + ')';
+                let regionDesc: string = this.isPrivateRegion(parts[1]) ? 'Private Use' : this.regions.get(parts[1].toUpperCase())!.getDescription();
+                return langDesc + ' (' + regionDesc + ')';
             }
-            reg = this.regions.get(parts[1]);
-            if (parts[1].length === 3 && reg) {
+            if (parts[1].length === 3) {
                 // could be a UN region code
-                return lang.getDescription() + ' (' + reg.getDescription() + ')';
+                let reg: Region | undefined = this.regions.get(parts[1]);
+                if (reg) {
+                    return langDesc + ' (' + reg.getDescription() + ')';
+                }
             }
             if (parts[1].length === 4) {
                 // could have script
-                let scriptCode: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
-                if (scriptCode === lang.getSuppressedScript()) {
-                    return undefined;
-                }
-                let script: Script | undefined = this.scripts.get(scriptCode);
-                if (script) {
-                    return lang.getDescription() + ' (' + script.getDescription() + ')';
-                }
-            }
-            // try with a variant
-            let variant: Variant | undefined = this.variants.get(parts[1].toLowerCase());
-            if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
-                // variant is valid for the language code
-                return lang.getDescription() + ' (' + variant.getDescription() + ')';
-            }
-        } else if (parts.length === 3) {
-            let lang: Language | undefined = this.languages.get(parts[0].toLowerCase());
-            if (!lang) {
-                return undefined;
-            }
-            if (parts[1].length === 4) {
-                // could be script + region or variant
                 let script: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
-                if (script === lang.getSuppressedScript()) {
+                if (lang && script === lang.getSuppressedScript()) {
                     return undefined;
                 }
                 let scr: Script | undefined = this.scripts.get(script);
                 if (scr) {
+                    return langDesc + ' (' + scr.getDescription() + ')';
+                }
+                if (this.isPrivateScript(script)) {
+                    return langDesc + ' (' + 'Private Use' + ')';
+                }
+            }
+            // try with a variant
+            if (!isPrivateLang) {
+                let variant: Variant | undefined = this.variants.get(parts[1].toLowerCase());
+                if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
+                    // variant is valid for the language code
+                    return langDesc + ' (' + variant.getDescription() + ')';
+                }
+            }
+            if (isPrivateLang) {
+                return 'Private Use';
+            }
+        } else if (parts.length === 3) {
+            let isPrivateLang: boolean = this.isPrivateLanguage(parts[0]);
+            if (!this.languages.has(parts[0].toLowerCase()) && !isPrivateLang) {
+                return undefined;
+            }
+            let langDesc: string = isPrivateLang ? 'Private Use' : this.languages.get(parts[0].toLowerCase())!.getDescription();
+            let lang: Language | undefined = isPrivateLang ? undefined : this.languages.get(parts[0].toLowerCase());
+            if (parts[1].length === 4) {
+                // could be script + region or variant
+                let script: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
+                if (lang && script === lang.getSuppressedScript()) {
+                    return undefined;
+                }
+                let isPrivateScr: boolean = this.isPrivateScript(script);
+                if (this.scripts.has(script) || isPrivateScr) {
+                    let scrDesc: string = isPrivateScr ? 'Private Use' : this.scripts.get(script)!.getDescription();
                     // check if next part is a region or variant
-                    let reg: Region | undefined = this.regions.get(parts[2].toUpperCase());
-                    if (reg) {
-                        return lang.getDescription() + ' (' + scr.getDescription() + ', ' + reg.getDescription() + ')';
+                    let isPrivateReg: boolean = this.isPrivateRegion(parts[2]);
+                    if (this.regions.has(parts[2].toUpperCase()) || isPrivateReg) {
+                        let regDesc: string = isPrivateReg ? 'Private Use' : this.regions.get(parts[2].toUpperCase())!.getDescription();
+                        return langDesc + ' (' + scrDesc + ', ' + regDesc + ')';
                     }
-                    // check if next part is a variant
-                    let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
-                    if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
-                        // variant is valid for the language code
-                        return lang.getDescription() + ' (' + scr.getDescription() + ', ' + variant.getDescription() + ')';
+                    if (!isPrivateLang) {
+                        let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
+                        if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
+                            // variant is valid for the language code
+                            return langDesc + ' (' + scrDesc + ', ' + variant.getDescription() + ')';
+                        }
                     }
                 }
-            } else if ((parts[1].length === 2 || parts[1].length === 3) && this.regions.has(parts[1].toUpperCase())) {
-                // could be a region code, check if next part is a variant
-                let reg: Region | undefined = this.regions.get(parts[1].toUpperCase());
-                if (reg && this.variants.has(parts[2].toLowerCase())) {
-                    let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
-                    if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
-                        // variant is valid for the language code
-                        return lang.getDescription() + ' (' + reg.getDescription() + ' - '
-                            + variant.getDescription() + ')';
+            } else {
+                // could be region + variant
+                let isPrivateReg: boolean = this.isPrivateRegion(parts[1]);
+                if ((parts[1].length === 2 || parts[1].length === 3) && (this.regions.has(parts[1].toUpperCase()) || isPrivateReg)) {
+                    // could be a region code, check if next part is a variant
+                    let regDesc: string = isPrivateReg ? 'Private Use' : this.regions.get(parts[1].toUpperCase())!.getDescription();
+                    if (!isPrivateLang) {
+                        let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
+                        if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
+                            // variant is valid for the language code
+                            return langDesc + ' (' + regDesc + ' - ' + variant.getDescription() + ')';
+                        }
+                    }
+                    // For private-use languages with regions, return description
+                    if (isPrivateLang) {
+                        return langDesc + ' (' + regDesc + ')';
                     }
                 }
             }
@@ -251,34 +334,36 @@ export class RegistryParser {
             if (this.languages.has(code.toLowerCase())) {
                 return code.toLowerCase();
             }
+            if (this.isPrivateLanguage(code)) {
+                return code.toLowerCase();
+            }
         } else if (parts.length == 2) {
             // contains either script or region
-            if (!this.languages.has(parts[0].toLowerCase())) {
+            let isPrivateLang: boolean = this.isPrivateLanguage(parts[0]);
+            if (!this.languages.has(parts[0].toLowerCase()) && !isPrivateLang) {
                 return undefined;
             }
-            if (parts[1].length === 2 && this.regions.has(parts[1].toUpperCase())) {
+            let lang: Language | undefined = isPrivateLang ? undefined : this.languages.get(parts[0].toLowerCase());
+            if (parts[1].length === 2 && (this.regions.has(parts[1].toUpperCase()) || this.isPrivateRegion(parts[1]))) {
                 // could be a country code
                 return parts[0].toLowerCase() + '-' + parts[1].toUpperCase();
             }
             if (parts[1].length === 3 && this.regions.has(parts[1])) {
                 // could be a UN region code
-                return parts[0].toLowerCase() + "-" + parts[1];
+                return parts[0].toLowerCase() + '-' + parts[1];
             }
             if (parts[1].length === 4) {
                 // could have script
-                let lang: Language | undefined = this.languages.get(parts[0].toLowerCase());
-                if (lang) {
-                    let scriptCode: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
-                    if (scriptCode === lang.getSuppressedScript()) {
-                        return undefined;
-                    }
-                    if (this.scripts.has(scriptCode)) {
-                        return parts[0].toLowerCase() + '-' + scriptCode;
-                    }
+                let script: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
+                if (lang && script === lang.getSuppressedScript()) {
+                    return undefined;
+                }
+                if (this.scripts.has(script) || this.isPrivateScript(script)) {
+                    return parts[0].toLowerCase() + '-' + script;
                 }
             }
             // try with a variant
-            if (this.variants.has(parts[1].toLowerCase())) {
+            if (!isPrivateLang) {
                 let variant: Variant | undefined = this.variants.get(parts[1].toLowerCase());
                 if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
                     // variant is valid for the language code
@@ -286,38 +371,50 @@ export class RegistryParser {
                 }
             }
         } else if (parts.length == 3) {
-            let lang: Language | undefined = this.languages.get(parts[0].toLowerCase());
-            if (!lang) {
+            let isPrivateLang: boolean = this.isPrivateLanguage(parts[0]);
+            if (!this.languages.has(parts[0].toLowerCase()) && !isPrivateLang) {
                 return undefined;
             }
+            let lang: Language | undefined = isPrivateLang ? undefined : this.languages.get(parts[0].toLowerCase());
             if (parts[1].length === 4) {
                 // could be script + region or variant
                 let script: string = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1).toLowerCase();
-                if (script === lang.getSuppressedScript()) {
+                if (lang && script === lang.getSuppressedScript()) {
                     return undefined;
                 }
-                let scr: Script | undefined = this.scripts.get(script);
-                if (scr) {
+                let isPrivateScr: boolean = this.isPrivateScript(script);
+                if (this.scripts.has(script) || isPrivateScr) {
+                    let scrCode: string = isPrivateScr ? script : this.scripts.get(script)!.getCode();
                     // check if next part is a region or variant
-                    let reg: Region | undefined = this.regions.get(parts[2].toUpperCase());
-                    if (reg) {
-                        return lang.getCode() + '-' + scr.getCode() + '-' + reg.getCode();
+                    let isPrivateReg: boolean = this.isPrivateRegion(parts[2]);
+                    if (this.regions.has(parts[2].toUpperCase()) || isPrivateReg) {
+                        let regCode: string = isPrivateReg ? parts[2].toUpperCase() : this.regions.get(parts[2].toUpperCase())!.getCode();
+                        return parts[0].toLowerCase() + '-' + scrCode + '-' + regCode;
                     }
-                    // check if next part is a variant
-                    let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
-                    if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
-                        // variant is valid for the language code
-                        return lang.getCode() + '-' + scr.getCode() + '-' + variant.getCode();
+                    if (!isPrivateLang) {
+                        let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
+                        if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
+                            // variant is valid for the language code
+                            return parts[0].toLowerCase() + '-' + scrCode + '-' + variant.getCode();
+                        }
                     }
                 }
-            } else if ((parts[1].length === 2 || parts[1].length === 3) && this.regions.has(parts[1].toUpperCase())) {
-                // could be a region code, check if next part is a variant
-                let reg: Region | undefined = this.regions.get(parts[1].toUpperCase());
-                if (reg) {
-                    let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
-                    if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
-                        // variant is valid for the language code
-                        return lang.getCode() + '-' + reg.getCode() + '-' + variant.getCode();
+            } else {
+                // could be region + variant
+                let isPrivateReg: boolean = this.isPrivateRegion(parts[1]);
+                if ((parts[1].length === 2 || parts[1].length === 3) && (this.regions.has(parts[1].toUpperCase()) || isPrivateReg)) {
+                    // could be a region code, check if next part is a variant
+                    let regCode: string = isPrivateReg ? parts[1].toUpperCase() : this.regions.get(parts[1].toUpperCase())!.getCode();
+                    if (!isPrivateLang) {
+                        let variant: Variant | undefined = this.variants.get(parts[2].toLowerCase());
+                        if (variant && variant.getPrefix() === parts[0].toLowerCase()) {
+                            // variant is valid for the language code
+                            return parts[0].toLowerCase() + '-' + regCode + '-' + variant.getCode();
+                        }
+                    }
+                    // For private-use languages with regions, return normalized code
+                    if (isPrivateLang) {
+                        return parts[0].toLowerCase() + '-' + regCode;
                     }
                 }
             }
