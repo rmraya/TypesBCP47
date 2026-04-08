@@ -9,12 +9,8 @@
         "sourceMap": true,
         "declaration": true,
         "outDir": "./dist",
-        "baseUrl": ".",
-        "paths": {
-            "*": [
-                "node_modules/*"
-            ]
-        },
+        "rootDir": "./ts",
+        "types": ["node"],
         "strict": true
     },
     "include": [
