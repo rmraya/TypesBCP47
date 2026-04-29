@@ -169,4 +169,18 @@ export class LanguageUtils {
         }
         return LanguageUtils.registryParser.getTagDescription(tag);
     }
+
+    static isValidLanguageTag(tag: string, caseSensitive?: boolean): boolean {
+        if (!LanguageUtils.registryParser) {
+            LanguageUtils.registryParser = new RegistryParser();
+        }
+        let normalized = LanguageUtils.registryParser.normalizeCode(tag);
+        if (!normalized) {
+            return false;
+        }
+        if (caseSensitive) {
+            return normalized === tag;
+        }
+        return normalized.toLocaleLowerCase('en') === tag.toLocaleLowerCase('en');
+    }
 }
