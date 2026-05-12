@@ -1,7 +1,7 @@
 {
   "name": "typesbcp47",
   "productName": "TypesBCP47",
-  "version": "1.22.0",
+  "version": "1.23.0",
   "description": "TypeScript library for parsing BCP47 language tags",
   "type": "module",
   "keywords": [
@@ -41,7 +41,7 @@
     "url": "git+https://github.com/maxprograms-com/TypesBCP47.git"
   },
   "devDependencies": {
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.12.4",
     "typescript": "^6.0.3"
   },
   "dependencies": {

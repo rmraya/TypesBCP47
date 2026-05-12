@@ -9,8 +9,8 @@
  * Contributors:
  *     Maxprograms - initial API and implementation
  *******************************************************************************/
-import { join } from "node:path";
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ContentHandler, DOMBuilder, SAXParser, XMLAttribute, XMLDocument, XMLElement } from "typesxml";
 import { Language } from "./Language.js";
@@ -171,10 +171,21 @@ export class LanguageUtils {
     }
 
     static isValidLanguageTag(tag: string, caseSensitive?: boolean): boolean {
+        if (tag === '') {
+            return false;
+        }
+        if (tag.toLowerCase().startsWith("x-") && !tag.endsWith("-")) {
+            // custom language code
+            return true;
+        }
+        if (tag.toLowerCase().indexOf("-x-") > 1 && !tag.endsWith("-")) {
+            // private use subtag, e.g. "en-x-abc"
+            return true;
+        }
         if (!LanguageUtils.registryParser) {
             LanguageUtils.registryParser = new RegistryParser();
         }
-        let normalized = LanguageUtils.registryParser.normalizeCode(tag);
+        let normalized: string | undefined = LanguageUtils.registryParser.normalizeCode(tag);
         if (!normalized) {
             return false;
         }
