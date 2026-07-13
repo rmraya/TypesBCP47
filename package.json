@@ -14,7 +14,8 @@
     "l10n"
   ],
   "scripts": {
-    "build": "tsc && node dist/copy-assets.js"
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc && node dist/copy-assets.js"
   },
   "author": {
     "name": "Rodolfo M. Raya",
