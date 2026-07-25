@@ -1,5 +1,9 @@
 # TypesBCP47
 
+[![npm version](https://img.shields.io/npm/v/typesbcp47)](https://www.npmjs.com/package/typesbcp47)
+[![npm license](https://img.shields.io/npm/l/typesbcp47)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/implementation-native%20TypeScript-3178c6)](https://www.typescriptlang.org/)
+
 TypeScript library for language tags from [BCP47](https://www.ietf.org/rfc/bcp/bcp47.html)
 
 ## Installation
